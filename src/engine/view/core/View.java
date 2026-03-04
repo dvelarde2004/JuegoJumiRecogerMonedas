@@ -22,6 +22,7 @@ import engine.controller.impl.Controller;
 import engine.controller.mappers.DynamicRenderableMapper;
 import engine.controller.ports.EngineState;
 import engine.utils.helpers.DoubleVector;
+import engine.utils.images.ImageDTO;
 import engine.utils.images.Images;
 import engine.view.renderables.ports.DynamicRenderDTO;
 import engine.view.renderables.ports.PlayerRenderDTO;
@@ -132,17 +133,16 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
 
     // region Constructors
     public View() {
-        this.images = new Images("");
+        this.images = new Images("src/resources/images/"); // ← Ruta corregida
         this.controlPanel = new ControlPanel(this);
         this.renderer = new Renderer(this);
         this.createFrame();
     }
 
     public View(DoubleVector worldDimension, DoubleVector viewDimension) {
-        this();
+        this(); // Llama al constructor por defecto que ya tiene la ruta correcta
         this.worldDimension = new DoubleVector(worldDimension);
         this.viewDimension = new DoubleVector(viewDimension);
-        this.createFrame();
     }
     // endregion
 
@@ -153,10 +153,10 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
             throw new IllegalArgumentException("View dimensions not setted");
         }
         if (this.background == null) {
-            // throw new IllegalArgumentException("Background image not setted");
+            System.out.println("View: Warning - Background image not set");
         }
         if (this.images.getSize() == 0) {
-            // throw new IllegalArgumentException("Images catalog is empty");
+            System.out.println("View: Warning - Images catalog is empty");
         }
         if (this.controller == null) {
             throw new IllegalArgumentException("Controller not setted");
@@ -226,11 +226,32 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
 
     public void loadAssets(AssetCatalog assets) {
         String fileName;
-        String path = assets.getPath();
 
-        for (String assetId : assets.getAssetIds()) {
+        System.out.println("=== CARGANDO ASSETS EN VIEW ===");
+        System.out.println("Ruta base imágenes: src/resources/images/");
+
+        ArrayList<String> assetIds = assets.getAssetIds();
+        System.out.println("Total assets en catálogo: " + assetIds.size());
+
+        // Listar todos los assetIds para ver si coin_gold está en el catálogo
+        System.out.println("Assets en catálogo:");
+        for (String assetId : assetIds) {
+            System.out.println("  - " + assetId);
+        }
+
+        for (String assetId : assetIds) {
             fileName = assets.get(assetId).fileName;
-            this.images.add(assetId, path + fileName);
+            System.out.println("Intentando cargar: " + assetId + " -> " + fileName);
+            this.images.add(assetId, fileName);
+        }
+
+        System.out.println("Total imágenes cargadas: " + this.images.getSize());
+
+        // Verificar específicamente coin_gold
+        ImageDTO coinImage = this.images.getImage("coin_gold");
+        System.out.println("¿coin_gold cargada? " + (coinImage != null));
+        if (coinImage != null) {
+            System.out.println("  - Dimensiones: " + coinImage.image.getWidth() + "x" + coinImage.image.getHeight());
         }
 
         // Setting background
@@ -323,7 +344,7 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
      * Queries the model via controller for entities visible in the specified
      * region.
      * Fills the provided buffers with results.
-     * 
+     *
      * @param minX               left edge of query region
      * @param maxX               right edge of query region
      * @param minY               top edge of query region
@@ -577,5 +598,4 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
         }
     }
     // endregion
-
 }

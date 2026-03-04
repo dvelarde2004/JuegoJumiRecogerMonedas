@@ -46,7 +46,7 @@ public abstract class AbstractWorldDefinitionProvider implements WorldDefinition
     public final double worldWidth;
     public final double worldHeight;
     public final AssetCatalog gameAssets = new AssetCatalog(ASSET_PATH);
-    private final WorldAssetsRegister assetsRegister;
+    protected final WorldAssetsRegister assetsRegister;
 
     public DefBackgroundDTO background;
 

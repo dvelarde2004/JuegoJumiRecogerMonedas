@@ -19,6 +19,9 @@ public final class RandomWorldDefinitionProvider extends AbstractWorldDefinition
 	protected void define() {
 		double density = 100d;
 
+		// IMPORTANTE: Registrar explícitamente la moneda en el catálogo del mundo
+		this.assetsRegister.registerAssetId("coin_gold");
+
 		// region Background
 		this.setBackgroundStatic("back_12");
 		// endregion
@@ -47,8 +50,8 @@ public final class RandomWorldDefinitionProvider extends AbstractWorldDefinition
 
 		// region Dynamic bodies - Asteroides más pequeños y menos
 		this.addAsteroidPrototypeAnywhereRandomAsset(
-				8, AssetType.ASTEROID, // Reducido de 6 a 8 pero con menos asteroides en el mundo pequeño
-				15, 40, // Tamaños reducidos
+				8, AssetType.ASTEROID,
+				15, 40,
 				20, 150,
 				0, 30);
 		// endregion
@@ -64,5 +67,8 @@ public final class RandomWorldDefinitionProvider extends AbstractWorldDefinition
 		this.addWeaponPresetMineLauncherRandomAsset(AssetType.MINE);
 		this.addWeaponPresetMissileLauncherRandomAsset(AssetType.MISSILE);
 		// endregion
+
+		// Podrías añadir monedas como decoración si quisieras,
+		// pero ya se generan en CoinLevelGenerator, así que no es necesario
 	}
 }

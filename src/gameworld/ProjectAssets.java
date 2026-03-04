@@ -87,7 +87,7 @@ public final class ProjectAssets {
         this.catalog.register("galaxy_01", "galaxy-01.png", AssetType.GALAXY, AssetIntensity.HIGH);
         this.catalog.register("galaxy_02", "galaxy-02.png", AssetType.GALAXY, AssetIntensity.HIGH);
         this.catalog.register("galaxy_03", "galaxy-03.png", AssetType.GALAXY, AssetIntensity.HIGH);
-        this.catalog.register("galaxy_03", "galaxy-04.png", AssetType.GALAXY, AssetIntensity.HIGH);
+        this.catalog.register("galaxy_03", "galaxy-04.png", AssetType.GALAXY, AssetIntensity.HIGH); // Nota: galaxy_03 repetido?
         this.catalog.register("galaxy_04", "galaxy-05.png", AssetType.GALAXY, AssetIntensity.HIGH);
         this.catalog.register("galaxy_06", "galaxy-06.png", AssetType.GALAXY, AssetIntensity.HIGH);
         // endregion
@@ -238,7 +238,17 @@ public final class ProjectAssets {
 
         // *** NUEVA REGIÓN PARA MONEDAS ***
         // region coins
+        System.out.println("Registrando moneda coin_gold...");
         this.catalog.register("coin_gold", "coin_gold.png", AssetType.COIN, AssetIntensity.HIGH);
+        System.out.println("Moneda registrada correctamente");
         // endregion
+
+        // Al final del constructor, después de todos los registros:
+        System.out.println("=== ASSETS REGISTRADOS EN PROJECTASSETS ===");
+        System.out.println("Total assets registrados: " + this.catalog.getAssetIds().size());
+        System.out.println("Lista de assets:");
+        for (String assetId : this.catalog.getAssetIds()) {
+            System.out.println("  - " + assetId);
+        }
     }
 }
