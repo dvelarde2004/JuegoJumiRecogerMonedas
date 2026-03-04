@@ -5,5 +5,7 @@ public enum BodyType {
     GRAVITY,
     DYNAMIC,
     PLAYER,
-    PROJECTILE
+    PROJECTILE,
+    ASTEROID,  // ← AÑADIDO
+    COIN       // ← AÑADIDO
 }

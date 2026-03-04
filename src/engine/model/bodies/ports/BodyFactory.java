@@ -1,6 +1,7 @@
 package engine.model.bodies.ports;
 
 import engine.model.bodies.core.AbstractBody;
+import engine.model.bodies.impl.CoinBody;
 import engine.model.bodies.impl.DynamicBody;
 import engine.model.bodies.impl.PlayerBody;
 import engine.model.bodies.impl.StaticBody;
@@ -13,7 +14,7 @@ import engine.utils.spatial.core.SpatialGrid;
 
 /**
  * Factory for creating bodies without threading concerns.
- * 
+ *
  * Responsible ONLY for body instantiation and physics engine setup.
  * Threading assignment is handled by BodyBatchManager and Model.
  */
@@ -52,13 +53,23 @@ public class BodyFactory {
             case PROJECTILE:
                 phyEngine = new BasicPhysicsEngine(dto1, dto2, dto3, profiler);
                 body = new DynamicBody(
-                        bodyEventProcessor, 
-                        spatialGrid, 
+                        bodyEventProcessor,
+                        spatialGrid,
                         phyEngine,
                         BodyType.PROJECTILE,
                         maxLifeTime,
                         emitterId,
                         profiler);
+                break;
+
+            case COIN:  // ← NUEVO CASO PARA MONEDAS
+                phyEngine = new BasicPhysicsEngine(dto1, dto2, dto3, profiler);
+                body = new CoinBody(
+                        bodyEventProcessor,
+                        spatialGrid,
+                        phyEngine,
+                        maxLifeTime,
+                        emitterId);
                 break;
 
             case DECORATOR:
@@ -73,7 +84,6 @@ public class BodyFactory {
                 body = new StaticBody(
                         bodyEventProcessor, spatialGrid, phyEngine, bodyType,
                         maxLifeTime, null);
-
                 break;
 
             default:
@@ -82,5 +92,4 @@ public class BodyFactory {
 
         return body;
     }
-
 }

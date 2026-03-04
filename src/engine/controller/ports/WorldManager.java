@@ -18,6 +18,9 @@ public interface WorldManager {
 
         public void addStaticBody(String assetId, double size, double posX, double posY, double angle);
 
+        public void addCoin(String assetId, double size, double posX, double posY,
+                            double angle, double angularSpeed);
+
         public void equipTrail(
                         String playerId, DefEmitterDTO bodyEmitterDef);
 

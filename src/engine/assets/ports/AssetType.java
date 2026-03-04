@@ -1,6 +1,5 @@
 package engine.assets.ports;
 
-
 public enum AssetType {
     BLACK_HOLE,
     MOON,
@@ -26,5 +25,7 @@ public enum AssetType {
     BULLET,
     MINE,
     MISSILE,
-    BACKGROUND, TRAIL
+    BACKGROUND,
+    TRAIL,
+    COIN  // ← YA ESTÁ AÑADIDA
 }

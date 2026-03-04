@@ -1,14 +1,14 @@
 package engine.model.bodies.ports;
 
 public class PlayerDTO {
-   public final String entityId;
+    public final String entityId;
 
     public final String playerName;
     public final double damage;
     public final double energy;
     public final double shieldLevel;
     public final int temperature;
-    
+
     public final int activeWeapon;
     public final double prymaryAmmoStatus;
     public final double secondaryAmmoStatus;
@@ -16,9 +16,12 @@ public class PlayerDTO {
     public final double missilesStatus;
     public final int score;
 
+    // NUEVOS CAMPOS
+    public final int coinsCollected;
+    public final int asteroidsDestroyed;
+
     public PlayerDTO(
             String entityId,
-
             String playerName,
             double damage,
             double energy,
@@ -29,7 +32,9 @@ public class PlayerDTO {
             double secondaryAmmoStatus,
             double minesStatus,
             double missilesStatus,
-            int score) {
+            int score,
+            int coinsCollected,        // ← NUEVO PARÁMETRO
+            int asteroidsDestroyed) {  // ← NUEVO PARÁMETRO
 
         this.entityId = entityId;
         this.playerName = playerName;
@@ -43,5 +48,7 @@ public class PlayerDTO {
         this.minesStatus = minesStatus;
         this.missilesStatus = missilesStatus;
         this.score = score;
+        this.coinsCollected = coinsCollected;              // ← NUEVO
+        this.asteroidsDestroyed = asteroidsDestroyed;      // ← NUEVO
     }
 }

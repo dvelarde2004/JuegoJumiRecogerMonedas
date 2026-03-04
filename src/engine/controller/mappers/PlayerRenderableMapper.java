@@ -24,9 +24,10 @@ public class PlayerRenderableMapper {
                 playerDto.prymaryAmmoStatus,
                 playerDto.secondaryAmmoStatus,
                 playerDto.minesStatus,
-                playerDto.missilesStatus);
+                playerDto.missilesStatus,
+                playerDto.coinsCollected,        // ← NUEVO
+                playerDto.asteroidsDestroyed);    // ← NUEVO
 
         return renderableData;
     }
-
 }

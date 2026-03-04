@@ -206,6 +206,7 @@ public final class ProjectAssets {
         // region stardusts (stardust-***)
         this.catalog.register("stardust_01", "stardust-01.png", AssetType.STARDUST, AssetIntensity.HIGH);
         this.catalog.register("stardust_02", "stardust-02.png", AssetType.STARDUST, AssetIntensity.HIGH);
+        // endregion
 
         // region spaceships (spaceship-***)
         this.catalog.register("spaceship_01", "spaceship-01.png", AssetType.SPACESHIP, AssetIntensity.HIGH);
@@ -235,5 +236,9 @@ public final class ProjectAssets {
         this.catalog.register("signs_01", "ui-signs-1.png", AssetType.UI_SIGN, AssetIntensity.HIGH);
         // endregion
 
+        // *** NUEVA REGIÓN PARA MONEDAS ***
+        // region coins
+        this.catalog.register("coin_gold", "coin_gold.png", AssetType.COIN, AssetIntensity.HIGH);
+        // endregion
     }
 }

@@ -23,50 +23,45 @@ public final class RandomWorldDefinitionProvider extends AbstractWorldDefinition
 		this.setBackgroundStatic("back_12");
 		// endregion
 
-		// region Decoration
-		this.addDecoratorAnywhereRandomAsset(10, AssetType.STARS, density, 200, 400);
-		this.addDecorator("cosmic_portal_01", 300, 1100, 400);
+		// region Decoration - Reducidas para el mundo pequeño
+		this.addDecoratorAnywhereRandomAsset(5, AssetType.STARS, density, 100, 200);
+		this.addDecorator("cosmic_portal_01", 300, 1100, 200);
 
-		this.addDecorator("stardust_01", 300, 1300, 800, -20, 1);
-		this.addDecorator("stars_07", 8000, 8000, 2000, 0, 1);
-		this.addDecoratorAnywhereRandomAsset(5, AssetType.GALAXY, density, 100, 300);
-		this.addDecoratorAnywhereRandomAsset(10, AssetType.GALAXY, density, 50, 200);
-		this.addDecoratorAnywhereRandomAsset(10, AssetType.HALO, density, 50, 200);
+		this.addDecorator("stardust_01", 300, 1300, 400, -20, 1);
+		this.addDecorator("stars_07", 2500, 2500, 800, 0, 1); // Reducido
+		this.addDecoratorAnywhereRandomAsset(3, AssetType.GALAXY, density, 80, 150);
+		this.addDecoratorAnywhereRandomAsset(5, AssetType.HALO, density, 50, 100);
 		// endregion
 
-		// region Gravity bodies => Static bodies
-		this.addGravityBody("planet_04", 4500, 4500, 1000);
-		this.addGravityBody("sun_02", 32000, 2000, 2000);
-		this.addGravityBody("moon_05", 20000, 20000, 1200);
-		this.addGravityBody("lab_01", 12000, 24000, 400);
-		this.addGravityBody("black_hole_02", 18000, 9000, 300);
-		this.addGravityBody("black_hole_01", 32000, 30000, 600);
+		// region Gravity bodies => Static bodies - Posiciones ajustadas
+		this.addGravityBody("planet_04", 1500, 1500, 400); // Reducido
+		this.addGravityBody("sun_02", 4000, 800, 600); // Reducido
+		this.addGravityBody("moon_05", 3000, 3000, 400); // Reducido
+		this.addGravityBody("lab_01", 2000, 3500, 200);
+		this.addGravityBody("black_hole_02", 2500, 1500, 150);
+		this.addGravityBody("black_hole_01", 4000, 4000, 250);
 
-		this.addGravityBodyAnywhereRandomAsset(5, AssetType.PLANET, density, 50, 300);
-		this.addGravityBodyAnywhereRandomAsset(5, AssetType.MOON, density, 100, 500);
-		this.addGravityBodyAnywhereRandomAsset(10, AssetType.MINE, density, 50, 100);
+		this.addGravityBodyAnywhereRandomAsset(3, AssetType.PLANET, density, 80, 150);
+		this.addGravityBodyAnywhereRandomAsset(3, AssetType.MOON, density, 60, 120);
 		// endregion
 
-		// region Dynamic bodies
+		// region Dynamic bodies - Asteroides más pequeños y menos
 		this.addAsteroidPrototypeAnywhereRandomAsset(
-				6, AssetType.ASTEROID,
-				10, 25,
-				10, 750,
-				0, 150);
+				8, AssetType.ASTEROID, // Reducido de 6 a 8 pero con menos asteroides en el mundo pequeño
+				15, 40, // Tamaños reducidos
+				20, 150,
+				0, 30);
 		// endregion
 
-		// region Players
-		this.addSpaceshipRandomAsset(1, AssetType.SPACESHIP, density, 50, 55, 19000, 19500);
-		this.addTrailEmitterCosmetic("stars_06", 150, BodyType.DECORATOR, 25);
+		// region Players - Posición más céntrica
+		this.addSpaceshipRandomAsset(1, AssetType.SPACESHIP, density, 50, 55, 2500, 2500); // Centro
+		this.addTrailEmitterCosmetic("stars_06", 100, BodyType.DECORATOR, 25);
 		// endregion
 
 		// region Weapons (addWeapon***)
 		this.addWeaponPresetBulletRandomAsset(AssetType.BULLET);
-
 		this.addWeaponPresetBurstRandomAsset(AssetType.BULLET);
-
 		this.addWeaponPresetMineLauncherRandomAsset(AssetType.MINE);
-
 		this.addWeaponPresetMissileLauncherRandomAsset(AssetType.MISSILE);
 		// endregion
 	}

@@ -437,6 +437,18 @@ public class Controller implements WorldManager, DomainEventProcessor {
     }
 
     @Override
+    public void addCoin(String assetId, double size, double posX, double posY,
+                        double angle, double angularSpeed) {
+
+        String entityId = this.model.addCoin(size, posX, posY, angle, angularSpeed, -1L);
+
+        if (entityId == null || entityId.isEmpty()) {
+            return; // ======= Max entity quantity reached =======>
+        }
+        this.view.addDynamicRenderable(entityId, assetId);
+    }
+
+    @Override
     public void addDynamicBody(String assetId, double size, double posX, double posY,
             double speedX, double speedY, double accX, double accY,
             double angle, double angularSpeed, double angularAcc, double thrust) {

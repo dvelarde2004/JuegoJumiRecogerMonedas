@@ -22,10 +22,7 @@ import engine.utils.images.ImageCache;
 import engine.utils.images.Images;
 import engine.utils.profiling.impl.RendererProfiler;
 import engine.utils.helpers.DoubleVector;
-import engine.view.hud.impl.InstrumentationHUD;
-import engine.view.hud.impl.PlayerHUD;
-import engine.view.hud.impl.SpatialGridHUD;
-import engine.view.hud.impl.SystemHUD;
+import engine.view.hud.impl.GameHUD; // IMPORTANTE: Importar tu nuevo HUD
 import engine.view.renderables.impl.DynamicRenderable;
 import engine.view.renderables.impl.Renderable;
 import engine.utils.pooling.PoolMDTO;
@@ -143,10 +140,14 @@ public class Renderer extends Canvas implements Runnable {
     private Images images;
     private ImageCache imagesCache;
     private VolatileImage viBackground;
-    private final PlayerHUD playerHUD = new PlayerHUD();
-    private final SystemHUD systemHUD = new SystemHUD();
-    private final SpatialGridHUD spatialGridHUD = new SpatialGridHUD();
-    private final InstrumentationHUD instrumentationHUD = new InstrumentationHUD();
+
+    // HUDs - Comentamos los HUDs originales y usamos solo GameHUD
+    // private final PlayerHUD playerHUD = new PlayerHUD();
+    // private final SystemHUD systemHUD = new SystemHUD();
+    // private final SpatialGridHUD spatialGridHUD = new SpatialGridHUD();
+    // private final InstrumentationHUD instrumentationHUD = new InstrumentationHUD();
+
+    private final GameHUD gameHUD = new GameHUD(); // ← NUEVO HUD
     private final RendererProfiler rendererProfiler = new RendererProfiler(MONITORING_PERIOD_NS);
 
     private double cameraX = 0.0d;
@@ -341,29 +342,31 @@ public class Renderer extends Canvas implements Runnable {
     }
 
     private void drawHUDs(Graphics2D g) {
-
-        long fps = this.rendererProfiler.getLastFps();
-        double avgDrawMs = this.rendererProfiler.getAvgDrawMs();
-
-        this.systemHUD.draw(g,
-                fps,
-                String.format("%.0f", avgDrawMs) + " ms",
-                this.imagesCache == null ? 0 : this.imagesCache.size(),
-                String.format("%.0f", this.imagesCache == null ? 0 : this.imagesCache.getHitsPercentage()) + "%",
-                this.view.getEntityAliveQuantity(),
-                this.view.getEntityDeadQuantity(),
-                this.currentFrame);
-
-        // this.instrumentationHUD.draw(g, this.getRenderMetrics().toObjectArray());
-
+        // Obtener datos del jugador
         PlayerRenderDTO playerData = this.view.getLocalPlayerRenderData();
-        if (playerData != null) {
-            this.playerHUD.draw(g, playerData.toObjectArray());
-        }
 
-        SpatialGridStatisticsRenderDTO spatialGridStats = this.view.getSpatialGridStatistics();
-        if (spatialGridStats != null) {
-            this.spatialGridHUD.draw(g, spatialGridStats.toObjectArray());
+        if (playerData != null) {
+
+            // Actualizar valores del HUD
+            this.gameHUD.setTimeRemaining(300); // Temporalmente fijo
+            this.gameHUD.setAsteroidsDestroyed(playerData.asteroidsDestroyed);
+            this.gameHUD.setCoinsCollected(playerData.coinsCollected);
+
+            // Comprobar si ganó o perdió
+            if (playerData.coinsCollected >= 30) {
+                this.gameHUD.setGameState("WINNER");
+            } else if (playerData.damage >= 1.0) {
+                this.gameHUD.setGameState("GAMEOVER");
+            } else {
+                this.gameHUD.setGameState("PLAYING");
+            }
+
+            // PASAR SOLO 3 VALORES: [vida, asteroides, monedas]
+            this.gameHUD.draw(g,
+                    playerData.damage,           // Vida (0-1)
+                    playerData.asteroidsDestroyed, // Asteroides destruidos
+                    playerData.coinsCollected     // Monedas recogidas
+            );
         }
     }
 

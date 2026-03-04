@@ -204,7 +204,7 @@ public class Model implements BodyEventProcessor {
         scratchDynamicsBuffer = new ArrayList<>(maxDynamicBodies);
         this.physicsValuesPool = new PoolMDTO<>(() -> new PhysicsValuesDTO(0L, 0, 0, 0, 0));
         this.physicsValuesPool.preallocate(4 * this.maxBodies);
-        
+
         // Calculate thread pool size based on expected batching (maxBodies/batchSize + margin for players)
         int threadPoolSize = (int) Math.ceil(maxDynamicBodies / (double) DEFAULT_BATCH_SIZE) + 50;
         this.bodyBatchManager = new BodyBatchManager(threadPoolSize);
@@ -236,11 +236,11 @@ public class Model implements BodyEventProcessor {
 
     // region Body adders (add***)
     public String addBody(BodyType bodyType,
-            double size,
-            double posX, double posY, double speedX, double speedY,
-            double accX, double accY,
-            double angle, double angularSpeed, double angularAcc,
-            double thrust, double maxLifeTime, String shooterId) {
+                          double size,
+                          double posX, double posY, double speedX, double speedY,
+                          double accX, double accY,
+                          double angle, double angularSpeed, double angularAcc,
+                          double thrust, double maxLifeTime, String shooterId) {
 
         if (AbstractBody.getAliveQuantity() >= this.maxBodies && bodyType == BodyType.DYNAMIC) {
             return null; // ========= Max vObject quantity reached ==========>>
@@ -256,7 +256,7 @@ public class Model implements BodyEventProcessor {
         }
 
         // Acquire 3 DTOs from pool for physics engine double buffer + snapshot
-        // in order to avoid allocations in the critical path of body creation 
+        // in order to avoid allocations in the critical path of body creation
         // and activation and also to ensure thread-safe access to physics values.
         PhysicsValuesDTO phyValues1 = this.physicsValuesPool.acquire();
         PhysicsValuesDTO phyValues2 = this.physicsValuesPool.acquire();
@@ -268,11 +268,11 @@ public class Model implements BodyEventProcessor {
 
         // Create body (WITHOUT threading concerns)
         AbstractBody body = BodyFactory.create(
-                this, this.spatialGrid, 
+                this, this.spatialGrid,
                 phyValues1, phyValues2, phyValues3, // Three for thread-safety
-                bodyType, 
-                maxLifeTime, 
-                shooterId, 
+                bodyType,
+                maxLifeTime,
+                shooterId,
                 this.bodyProfiler);
 
         // Prepare body state
@@ -300,15 +300,31 @@ public class Model implements BodyEventProcessor {
     }
 
     public String addDynamic(double size,
-            double posX, double posY, double speedX, double speedY,
-            double accX, double accY,
-            double angle, double angularSpeed, double angularAcc,
-            double thrust, double maxLifeInSeconds) {
+                             double posX, double posY, double speedX, double speedY,
+                             double accX, double accY,
+                             double angle, double angularSpeed, double angularAcc,
+                             double thrust, double maxLifeInSeconds) {
 
         String entityId = this.addBody(BodyType.DYNAMIC,
                 size, posX, posY, speedX, speedY, accX, accY,
                 angle, angularSpeed, angularAcc,
                 thrust, maxLifeInSeconds, null);
+
+        return entityId;
+    }
+
+    /**
+     * Añade una moneda al juego
+     */
+    public String addCoin(double size,
+                          double posX, double posY,
+                          double angle, double angularSpeed,
+                          double maxLifeInSeconds) {
+
+        String entityId = this.addBody(BodyType.COIN,
+                size, posX, posY, 0, 0, 0, 0,
+                angle, angularSpeed, 0,
+                0, maxLifeInSeconds, null);
 
         return entityId;
     }
@@ -323,10 +339,10 @@ public class Model implements BodyEventProcessor {
     }
 
     public String addPlayer(double size,
-            double posX, double posY, double speedX, double speedY,
-            double accX, double accY,
-            double angle, double angularSpeed, double angularAcc,
-            double thrust, double maxLifeInSeconds) {
+                            double posX, double posY, double speedX, double speedY,
+                            double accX, double accY,
+                            double angle, double angularSpeed, double angularAcc,
+                            double thrust, double maxLifeInSeconds) {
 
         String entityId = this.addBody(BodyType.PLAYER,
                 size, posX, posY, speedX, speedY, accX, accY,
@@ -337,11 +353,11 @@ public class Model implements BodyEventProcessor {
     }
 
     public String addProjectile(double size,
-            double posX, double posY, double speedX, double speedY,
-            double accX, double accY,
-            double angle, double angularSpeed, double angularAcc,
-            double thrust, double maxLifeInSeconds,
-            String shooterId) {
+                                double posX, double posY, double speedX, double speedY,
+                                double accX, double accY,
+                                double angle, double angularSpeed, double angularAcc,
+                                double thrust, double maxLifeInSeconds,
+                                String shooterId) {
 
         String entityId = this.addBody(BodyType.PROJECTILE,
                 size, posX, posY, speedX, speedY, accX, accY,
@@ -411,6 +427,7 @@ public class Model implements BodyEventProcessor {
             case DYNAMIC:
             case PLAYER:
             case PROJECTILE:
+            case COIN:  // ← AÑADIDO: Las monedas también van en dynamicBodies
                 return this.dynamicBodies.get(entityId);
 
             case GRAVITY:
@@ -599,6 +616,7 @@ public class Model implements BodyEventProcessor {
 
             case DYNAMIC:
             case PROJECTILE:
+            case COIN:  // ← AÑADIDO: Las monedas también notifican su muerte
                 this.domainEventProcessor.notifyDynamicIsDead(body.getBodyId());
                 this.spatialGrid.remove(body.getBodyId());
                 this.dynamicBodies.remove(body.getBodyId());
@@ -658,7 +676,7 @@ public class Model implements BodyEventProcessor {
     // region BodyEventProcessor
     @Override
     public void processBodyEvents(AbstractBody checkBody,
-            PhysicsValuesDTO checkBodyNewPhyValues, PhysicsValuesDTO checkBodyOldPhyValues) {
+                                  PhysicsValuesDTO checkBodyNewPhyValues, PhysicsValuesDTO checkBodyOldPhyValues) {
 
         if (!isProcessable(checkBody)) {
             return; // To avoid duplicate or unnecesary event processing ======>
@@ -704,7 +722,7 @@ public class Model implements BodyEventProcessor {
 
     // region Check methods (check***)
     private void checkCollisions(AbstractBody checkBody, PhysicsValuesDTO newPhyValues,
-            List<DomainEvent> domainEvents) {
+                                 List<DomainEvent> domainEvents) {
 
         if (checkBody == null)
             throw new IllegalArgumentException("checkCollisions() -> checkBody is null");
@@ -770,7 +788,7 @@ public class Model implements BodyEventProcessor {
 
         projectile = otherBody.getBodyType() == BodyType.PROJECTILE ? otherBody
                 : checkBody.getBodyType() == BodyType.PROJECTILE ? checkBody
-                        : null;
+                : null;
 
         if (projectile == null) {
             return false; // ===== No projectile -> No immunity =====>
@@ -798,7 +816,7 @@ public class Model implements BodyEventProcessor {
     }
 
     private void checkEmissionEvents(AbstractBody checkBody, PhysicsValuesDTO newPhyValues,
-            PhysicsValuesDTO oldPhyValues, List<DomainEvent> domainEvents) {
+                                     PhysicsValuesDTO oldPhyValues, List<DomainEvent> domainEvents) {
 
         BodyRefDTO primaryBodyRef = checkBody.getBodyRef();
 
@@ -826,7 +844,7 @@ public class Model implements BodyEventProcessor {
     }
 
     private void checkFireEvents(AbstractBody checkBody,
-            PhysicsValuesDTO newPhyValues, List<DomainEvent> domainEvents) {
+                                 PhysicsValuesDTO newPhyValues, List<DomainEvent> domainEvents) {
 
         BodyType bodyType = checkBody.getBodyType();
         BodyRefDTO primaryBodyRef = checkBody.getBodyRef();
@@ -855,7 +873,7 @@ public class Model implements BodyEventProcessor {
     }
 
     private void checkLimitEvents(AbstractBody body, PhysicsValuesDTO phyValues,
-            List<DomainEvent> domainEvents) {
+                                  List<DomainEvent> domainEvents) {
 
         if (phyValues.posX < 0) {
             domainEvents.add(new LimitEvent(DomainEventType.REACHED_EAST_LIMIT, body.getBodyRef()));
@@ -899,7 +917,7 @@ public class Model implements BodyEventProcessor {
 
     // region Execute actions (executeAction***)
     private void executeAction(ActionDTO action, AbstractBody body,
-            PhysicsValuesDTO newPhyValues) {
+                               PhysicsValuesDTO newPhyValues) {
 
         if (body == null) {
             throw new IllegalArgumentException("doModelAction() -> body is null");
@@ -915,6 +933,13 @@ public class Model implements BodyEventProcessor {
             case MOVE:
                 body.doMovement(newPhyValues);
                 spatialGridUpsert((AbstractBody) body);
+                break;
+            case COLLECT_COIN:  // ← DEBE EXISTIR
+                if (body instanceof PlayerBody) {
+                    PlayerBody player = (PlayerBody) body;
+                    player.addCoin();
+                    System.out.println("DEBUG - Model: Moneda añadida al jugador, total: " + player.getCoinsCollected());
+                }
                 break;
 
             case MOVE_REBOUND_IN_EAST:
@@ -1031,7 +1056,7 @@ public class Model implements BodyEventProcessor {
     // endregion
 
     private void detectEvents(AbstractBody checkBody,
-            PhysicsValuesDTO newPhyValues, PhysicsValuesDTO oldPhyValues, List<DomainEvent> domainEvents) {
+                              PhysicsValuesDTO newPhyValues, PhysicsValuesDTO oldPhyValues, List<DomainEvent> domainEvents) {
 
         // 1 => Limits (all bodies) -----------------------
         this.checkLimitEvents(checkBody, newPhyValues, domainEvents);
@@ -1074,11 +1099,14 @@ public class Model implements BodyEventProcessor {
             case DYNAMIC:
             case PLAYER:
             case PROJECTILE:
+            case COIN:  // ← AÑADIDO: Las monedas van en dynamicBodies
                 bodyMap = this.dynamicBodies;
                 break;
             case GRAVITY:
                 bodyMap = this.gravityBodies;
                 break;
+            default:
+                bodyMap = null;
         }
 
         if (bodyMap == null) {
@@ -1208,7 +1236,7 @@ public class Model implements BodyEventProcessor {
 
     /**
      * Gracefully shutdown the model and all managed resources.
-     * 
+     *
      * Stops all running threads and runners in the batch manager.
      */
     public void shutdown() {

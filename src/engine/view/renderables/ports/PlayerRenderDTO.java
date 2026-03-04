@@ -13,6 +13,10 @@ public class PlayerRenderDTO {
     public final double minesStatus;
     public final double missilesStatus;
 
+    // NUEVOS CAMPOS
+    public final int coinsCollected;
+    public final int asteroidsDestroyed;
+
     public PlayerRenderDTO(
             String entityId,
             String playerName,
@@ -24,7 +28,9 @@ public class PlayerRenderDTO {
             double primaryAmmoStatus,
             double secondaryAmmoStatus,
             double minesStatus,
-            double missilesStatus) {
+            double missilesStatus,
+            int coinsCollected,        // ← NUEVO
+            int asteroidsDestroyed) {  // ← NUEVO
 
         this.entityId = entityId;
         this.playerName = playerName;
@@ -37,6 +43,8 @@ public class PlayerRenderDTO {
         this.secondaryAmmoStatus = secondaryAmmoStatus;
         this.minesStatus = minesStatus;
         this.missilesStatus = missilesStatus;
+        this.coinsCollected = coinsCollected;        // ← NUEVO
+        this.asteroidsDestroyed = asteroidsDestroyed; // ← NUEVO
     }
 
     public Object[] toObjectArray() {
@@ -51,7 +59,9 @@ public class PlayerRenderDTO {
                 this.primaryAmmoStatus,
                 this.secondaryAmmoStatus,
                 this.minesStatus,
-                this.missilesStatus
+                this.missilesStatus,
+                this.coinsCollected,        // ← NUEVO
+                this.asteroidsDestroyed     // ← NUEVO
         };
     }
 }

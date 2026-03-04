@@ -1,4 +1,3 @@
-
 import engine.controller.impl.Controller;
 import engine.controller.ports.ActionsGenerator;
 import engine.model.impl.Model;
@@ -7,6 +6,9 @@ import engine.view.core.View;
 import engine.world.ports.WorldDefinition;
 import engine.world.ports.WorldDefinitionProvider;
 import gameworld.ProjectAssets;
+import gamerules.CoinGameRules;  // ← REGLAS PERSONALIZADAS
+import gamelevel.CoinLevelGenerator; // ← GENERADOR DE NIVEL PERSONALIZADO
+import gameai.AIBasicSpawner;
 
 public class Main {
 
@@ -17,56 +19,58 @@ public class Main {
 		System.setProperty("sun.java2d.opengl", "true");
 		System.setProperty("sun.java2d.d3d", "false"); // OpenGL
 		// endregion
-		
+
 		// region Dimensions and limits
-		// Due a recognized issue with BufferStrategy when
-		// Canvas size > screen size causes BufferStrategy to fail (blank window)
-		// in that case engine whill throw an error and exit.
+		// Debido a un problema conocido con BufferStrategy cuando
+		// el tamaño del Canvas es mayor que la pantalla, BufferStrategy falla (ventana en blanco)
+		// en ese caso el motor lanzará un error y saldrá.
 		//
 		// => **********************************************************
-		// => *** Keep viewDimension smaller than actual screen size ***
-		// => *** or... no set viewDimension                         ***
+		// => *** Mantén viewDimension más pequeño que el tamaño real de la pantalla ***
+		// => *** o... no establezcas viewDimension                         ***
 		// => **********************************************************
 		DoubleVector viewDimension = new DoubleVector(1920, 1080);
-		DoubleVector worldDimension = new DoubleVector(40000, 40000);
+		DoubleVector worldDimension = new DoubleVector(5000, 5000);
 		// endregion
 
 		int maxBodies = 1000;
-		int maxAsteroidCreationDelay = 3; // Used by AIBasicSpawner
+		int maxAsteroidCreationDelay = 3000; // 3 segundos entre asteroides
 
 		ProjectAssets projectAssets = new ProjectAssets();
 
-		// ActionsGenerator gameRules = new gamerules.LimitRebound();
-		// ActionsGenerator gameRules = new gamerules.ReboundAndCollision();
-		ActionsGenerator gameRules = new gamerules.InLimitsGoToCenter();
+		// *** REGLAS DEL JUEGO PERSONALIZADAS ***
+		// Usamos CoinGameRules que maneja:
+		// - Colisión nave-asteroide: -25% vida
+		// - Colisión nave-moneda: +1 moneda
+		// - Detección de victoria (30 monedas) y derrota (vida 0)
+		ActionsGenerator gameRules = new CoinGameRules();
 
 		// *** WORLD DEFINITION PROVIDER ***
 		WorldDefinitionProvider worldProv = new gameworld.RandomWorldDefinitionProvider(
 				worldDimension, projectAssets);
 
 		// *** CORE ENGINE ***
-
-		// region Controller
 		Controller controller = new Controller(
 				worldDimension, viewDimension, maxBodies,
 				new View(), new Model(worldDimension, maxBodies),
 				gameRules);
 
 		controller.activate();
-		// endregion
 
 		// *** SCENE ***
-
-		// region World definition
 		WorldDefinition worldDef = worldProv.provide();
-		// endregion
 
-		// region Level generator (Level***)
-		new gamelevel.LevelBasic(controller, worldDef);
-		// endregion
+		// *** LEVEL GENERATOR PERSONALIZADO ***
+		// CoinLevelGenerator coloca 30 monedas en posiciones aleatorias
+		new CoinLevelGenerator(controller, worldDef);
 
-		// region AI generator (AI***)
-		new gameai.AIBasicSpawner(controller, worldDef, maxAsteroidCreationDelay).activate();
-		// endregion
+		// *** AI GENERATOR ***
+		// Genera asteroides continuamente durante la partida
+		new AIBasicSpawner(controller, worldDef, maxAsteroidCreationDelay).activate();
+
+		System.out.println("=== JUEGO INICIADO ===");
+		System.out.println("Objetivo: Recoge 30 monedas en 5 minutos");
+		System.out.println("Vida: 4 golpes (25% por asteroide)");
+		System.out.println("¡Buena suerte, piloto!");
 	}
 }

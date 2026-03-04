@@ -25,14 +25,18 @@ public class PlayerBody extends DynamicBody {
     private int temperature = 1;
     private double shield = 1D;
     private int score = 0;
+
+    // NUEVOS CAMPOS PARA EL JUEGO DE MONEDAS
+    private int coinsCollected = 0;
+    private int asteroidsDestroyed = 0;
     // endregion
 
     public PlayerBody(BodyEventProcessor bodyEventProcessor,
-            SpatialGrid spatialGrid,
-            PhysicsEngine physicsEngine,
-            double maxLifeInSeconds,
-            String emitterId,
-            BodyProfiler profiler) {
+                      SpatialGrid spatialGrid,
+                      PhysicsEngine physicsEngine,
+                      double maxLifeInSeconds,
+                      String emitterId,
+                      BodyProfiler profiler) {
 
         super(bodyEventProcessor,
                 spatialGrid,
@@ -64,6 +68,25 @@ public class PlayerBody extends DynamicBody {
             this.currentWeaponIndex = 0;
         }
     }
+
+    public void addCoin() {
+        this.coinsCollected++;
+        System.out.println("DEBUG - PlayerBody: Moneda recogida, total: " + this.coinsCollected);
+    }
+
+    public int getCoinsCollected() {
+        return this.coinsCollected;
+    }
+
+
+    public void addAsteroidDestroyed() {
+        this.asteroidsDestroyed++;
+    }
+
+    public int getAsteroidsDestroyed() {
+        return this.asteroidsDestroyed;
+    }
+    // FIN NUEVOS MÉTODOS
 
     // region Getters (get***)
     public BasicEmitter getActiveWeapon() {
@@ -146,7 +169,9 @@ public class PlayerBody extends DynamicBody {
                 this.getAmmoStatusSecondary(),
                 this.getAmmoStatusMines(),
                 this.getAmmoStatusMissiles(),
-                this.score);
+                this.score,
+                this.coinsCollected,      // ← NUEVO CAMPO
+                this.asteroidsDestroyed); // ← NUEVO CAMPO
         return playerData;
     }
 

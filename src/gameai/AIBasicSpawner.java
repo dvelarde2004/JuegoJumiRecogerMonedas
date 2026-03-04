@@ -53,17 +53,23 @@ public class AIBasicSpawner extends AbstractIAGenerator {
     // *** PRIVATE (alphabetic order) ***
 
     private void addDynamic(DefItem defItem) {
-        // If defItem is a prototype, we need to convert it to a DTO
-        // to resolve range-based properties ...
         DefItemDTO bodyDef = this.defItemToDTO(defItem);
 
-        // At this place you can modify position,
-        // speed, thrust, etc. as needed
-        // or you can accept definition values
-        // as they came form world definition.
-        // ... or do nothing.
+        // Hacer los asteroides más grandes (multiplicar tamaño)
+        // Esto requiere crear un nuevo DTO con tamaño modificado
+        DefItemDTO modifiedDef = new DefItemDTO(
+                bodyDef.assetId,
+                bodyDef.size * 1.5, // 50% más grandes
+                bodyDef.angle,
+                bodyDef.posX,
+                bodyDef.posY,
+                bodyDef.density,
+                bodyDef.speedX,
+                bodyDef.speedY,
+                bodyDef.angularSpeed,
+                bodyDef.thrust
+        );
 
-        // Injecting dynamic body into the game
-        this.addDynamicIntoTheGame(bodyDef);
+        this.addDynamicIntoTheGame(modifiedDef);
     }
 }
