@@ -133,14 +133,14 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
 
     // region Constructors
     public View() {
-        this.images = new Images("src/resources/images/"); // ← Ruta corregida
+        this.images = new Images("src/resources/images/");
         this.controlPanel = new ControlPanel(this);
         this.renderer = new Renderer(this);
         this.createFrame();
     }
 
     public View(DoubleVector worldDimension, DoubleVector viewDimension) {
-        this(); // Llama al constructor por defecto que ya tiene la ruta correcta
+        this();
         this.worldDimension = new DoubleVector(worldDimension);
         this.viewDimension = new DoubleVector(viewDimension);
     }
@@ -165,16 +165,29 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
             throw new IllegalArgumentException("World dimensions not setted");
         }
 
-        // new
         DoubleVector renderDimension = this.viewportDimension == null
                 ? this.viewDimension
                 : this.viewportDimension;
         this.renderer.setViewDimension(renderDimension);
 
-        // this.renderer.setViewDimension(this.viewDimension);
         this.renderer.activate();
         this.pack();
         System.out.println("View: Activated");
+    }
+
+    // NUEVO: Método para actualizar el temporizador (llamado desde Renderer)
+    public void updateTimer() {
+        if (this.controller != null) {
+            this.controller.updateTimer();
+        }
+    }
+
+    // NUEVO: Método para obtener el tiempo restante
+    public int getTimeRemaining() {
+        if (this.controller == null) {
+            return 300; // Valor por defecto
+        }
+        return this.controller.getTimeRemaining();
     }
 
     // region adders (add***)
@@ -192,7 +205,6 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
         if (this.worldDimension == null) {
             return null;
         }
-
         return new DoubleVector(this.worldDimension);
     }
 
@@ -230,18 +242,9 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
         System.out.println("=== CARGANDO ASSETS EN VIEW ===");
         System.out.println("Ruta base imágenes: src/resources/images/");
 
-        ArrayList<String> assetIds = assets.getAssetIds();
-        System.out.println("Total assets en catálogo: " + assetIds.size());
-
-        // Listar todos los assetIds para ver si coin_gold está en el catálogo
-        System.out.println("Assets en catálogo:");
-        for (String assetId : assetIds) {
-            System.out.println("  - " + assetId);
-        }
-
-        for (String assetId : assetIds) {
+        for (String assetId : assets.getAssetIds()) {
             fileName = assets.get(assetId).fileName;
-            System.out.println("Intentando cargar: " + assetId + " -> " + fileName);
+            System.out.println("Registrando: " + assetId + " -> " + fileName);
             this.images.add(assetId, fileName);
         }
 
@@ -287,7 +290,6 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
         if (this.controller == null) {
             throw new IllegalArgumentException("Controller not setted");
         }
-
         return this.controller.snapshotRenderData();
     }
 
@@ -295,7 +297,6 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
         if (this.controller == null) {
             throw new IllegalArgumentException("Controller not setted");
         }
-
         return this.controller.snapshotRenderData(mapper);
     }
 
@@ -319,7 +320,6 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
         if (this.localPlayerId == null || this.localPlayerId.isEmpty()) {
             return null;
         }
-
         return this.controller.getPlayerRenderData(this.localPlayerId);
     }
 
@@ -340,34 +340,17 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
     }
     // endregion
 
-    /**
-     * Queries the model via controller for entities visible in the specified
-     * region.
-     * Fills the provided buffers with results.
-     *
-     * @param minX               left edge of query region
-     * @param maxX               right edge of query region
-     * @param minY               top edge of query region
-     * @param maxY               bottom edge of query region
-     * @param scratchCellIndices buffer for spatial grid cell indices
-     * @param scratchEntityIds   buffer to fill with visible entity IDs
-     * @return list of entity IDs in region
-     */
     public ArrayList<String> queryEntitiesInRegion(
             double minX, double maxX, double minY, double maxY,
             int[] scratchCellIndices, ArrayList<String> scratchEntityIds) {
-
-        // Relay al controller (que tiene acceso al modelo)
         return this.controller.queryEntitiesInRegion(
                 minX, maxX, minY, maxY,
                 scratchCellIndices, scratchEntityIds);
     }
 
     // *** PRIVATE ***
-
     private void addRenderer(Container container) {
         GridBagConstraints c = new GridBagConstraints();
-
         c.anchor = GridBagConstraints.NORTHWEST;
         c.fill = GridBagConstraints.BOTH;
         c.gridx = 1;
@@ -381,33 +364,31 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
 
     private void createFrame() {
         Container panel;
-
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLayout(new GridBagLayout());
-
         panel = this.getContentPane();
         this.addRenderer(panel);
-
         this.setFocusable(true);
         this.addKeyListener(this);
         this.addWindowFocusListener(this);
-
-        this.renderer.setFocusable(false); // El Renderer NO necesita foco
-        this.renderer.setIgnoreRepaint(true); // Mejor performance
-
+        this.renderer.setFocusable(false);
+        this.renderer.setIgnoreRepaint(true);
         this.pack();
         this.setVisible(true);
-
         SwingUtilities.invokeLater(() -> this.requestFocusInWindow());
+    }
+    // NUEVO: Método para detener el temporizador cuando se gana
+    public void stopTimer() {
+        if (this.controller != null) {
+            this.controller.stopTimer();
+        }
     }
 
     private void resetAllKeyStates() {
         if (this.localPlayerId == null || this.controller == null) {
             return;
         }
-
         try {
-            // Resetear TODOS los controles activos
             this.controller.playerThrustOff(this.localPlayerId);
             this.controller.playerRotateOff(this.localPlayerId);
             this.fireKeyDown.set(false);
@@ -416,26 +397,16 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
         }
     }
 
-    /**
-     * Sync input state each frame.
-     * OS may consume keyboard events (Alt+Tab, Win+X, etc) without firing
-     * keyReleased(),
-     * causing tracking to become inconsistent. Called from Renderer each frame.
-     */
     public void syncInputState() {
         if (this.localPlayerId == null || this.controller == null || this.pressedKeys.isEmpty()) {
             return;
         }
-
-        // When window lacks focus, all keys should be released
         if (!this.wasWindowFocused) {
             if (!this.pressedKeys.isEmpty()) {
                 System.out.println("View.syncInputState: Window not focused but keys tracked: "
                         + this.pressedKeys + " - clearing");
-
                 Set<Integer> keysToRelease = new HashSet<>(this.pressedKeys);
                 this.pressedKeys.clear();
-
                 for (int keyCode : keysToRelease) {
                     try {
                         this.processKeyRelease(keyCode);
@@ -449,21 +420,11 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
     }
 
     // *** INTERFACE IMPLEMENTATIONS ***
-
-    // region WindowFocusListener
-    /**
-     * Detectamos pérdida de foco para resetear estado de teclas.
-     * Esto es crítico porque si el usuario presiona Alt+Tab,
-     * el keyReleased() nunca se genera.
-     */
     @Override
     public void windowLostFocus(WindowEvent e) {
         this.wasWindowFocused = false;
-
-        // Clear pressed keys (won't receive keyReleased for them)
         Set<Integer> keysToRelease = new HashSet<>(this.pressedKeys);
         this.pressedKeys.clear();
-
         for (int keyCode : keysToRelease) {
             try {
                 this.processKeyRelease(keyCode);
@@ -471,7 +432,6 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
                 throw new RuntimeException("View: Key release failed on focus lost: " + keyCode, ex);
             }
         }
-
         System.out.println("View: Window lost focus - pressed keys cleared: " + keysToRelease);
     }
 
@@ -480,23 +440,16 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
         this.wasWindowFocused = true;
         System.out.println("View: Window gained focus");
     }
-    // endregion
 
-    // region KeyListener
     @Override
     public void keyPressed(KeyEvent e) {
         try {
             if (this.localPlayerId == null || this.controller == null) {
                 return;
             }
-
             int keyCode = e.getKeyCode();
-
-            // Agregar a tracking si ya no estaba presionada
             if (!this.pressedKeys.contains(keyCode)) {
                 this.pressedKeys.add(keyCode);
-
-                // Process only first press (not OS key repeat)
                 this.processKeyPress(keyCode);
             }
         } catch (Exception ex) {
@@ -511,11 +464,8 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
             if (this.localPlayerId == null || this.controller == null) {
                 return;
             }
-
             int keyCode = e.getKeyCode();
-
             this.pressedKeys.remove(keyCode);
-
             this.processKeyRelease(keyCode);
         } catch (Exception ex) {
             throw new RuntimeException("View: keyReleased event failed", ex);
@@ -527,75 +477,57 @@ public class View extends JFrame implements KeyListener, WindowFocusListener {
         // Nothing to do
     }
 
-    /**
-     * Procesamiento de keyPress (se llama solo una vez cuando se presiona).
-     * NO se llama en key repeat.
-     */
     private void processKeyPress(int keyCode) {
         switch (keyCode) {
             case KeyEvent.VK_UP:
             case KeyEvent.VK_W:
                 this.controller.playerThrustOn(this.localPlayerId);
                 break;
-
             case KeyEvent.VK_DOWN:
             case KeyEvent.VK_X:
                 this.controller.playerReverseThrust(this.localPlayerId);
                 break;
-
             case KeyEvent.VK_LEFT:
             case KeyEvent.VK_A:
                 this.controller.playerRotateLeftOn(this.localPlayerId);
                 break;
-
             case KeyEvent.VK_RIGHT:
             case KeyEvent.VK_D:
                 this.controller.playerRotateRightOn(this.localPlayerId);
                 break;
-
             case KeyEvent.VK_SPACE:
                 if (!this.fireKeyDown.get()) {
                     this.fireKeyDown.set(true);
                     this.controller.playerFire(this.localPlayerId);
                 }
                 break;
-
             case KeyEvent.VK_1:
                 this.controller.playerSelectNextWeapon(this.localPlayerId);
                 break;
         }
     }
 
-    /**
-     * Procesamiento de keyRelease (se llama cuando se libera la tecla).
-     * Puede no llamarse si el OS consume el evento.
-     */
     private void processKeyRelease(int keyCode) {
         switch (keyCode) {
             case KeyEvent.VK_UP:
             case KeyEvent.VK_W:
                 this.controller.playerThrustOff(this.localPlayerId);
                 break;
-
             case KeyEvent.VK_DOWN:
             case KeyEvent.VK_X:
                 this.controller.playerThrustOff(this.localPlayerId);
                 break;
-
             case KeyEvent.VK_LEFT:
             case KeyEvent.VK_A:
                 this.controller.playerRotateOff(this.localPlayerId);
                 break;
-
             case KeyEvent.VK_RIGHT:
             case KeyEvent.VK_D:
                 this.controller.playerRotateOff(this.localPlayerId);
                 break;
-
             case KeyEvent.VK_SPACE:
                 this.fireKeyDown.set(false);
                 break;
         }
     }
-    // endregion
 }

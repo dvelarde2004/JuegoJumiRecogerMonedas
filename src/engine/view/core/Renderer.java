@@ -22,7 +22,7 @@ import engine.utils.images.ImageCache;
 import engine.utils.images.Images;
 import engine.utils.profiling.impl.RendererProfiler;
 import engine.utils.helpers.DoubleVector;
-import engine.view.hud.impl.GameHUD; // IMPORTANTE: Importar tu nuevo HUD
+import engine.view.hud.impl.GameHUD;
 import engine.view.renderables.impl.DynamicRenderable;
 import engine.view.renderables.impl.Renderable;
 import engine.utils.pooling.PoolMDTO;
@@ -31,6 +31,7 @@ import engine.view.renderables.ports.PlayerRenderDTO;
 import engine.view.renderables.ports.RenderDTO;
 import engine.view.renderables.ports.RenderMetricsDTO;
 import engine.view.renderables.ports.SpatialGridStatisticsRenderDTO;
+import gamerules.CoinGameRules;
 
 import java.awt.Toolkit;
 
@@ -125,7 +126,7 @@ import java.awt.Toolkit;
 public class Renderer extends Canvas implements Runnable {
 
     // region Constants
-    private static final int REFRESH_DELAY_IN_MILLIS = 1; //
+    private static final int REFRESH_DELAY_IN_MILLIS = 1;
     private static final long MONITORING_PERIOD_NS = 750_000_000L;
     // endregion
 
@@ -141,13 +142,7 @@ public class Renderer extends Canvas implements Runnable {
     private ImageCache imagesCache;
     private VolatileImage viBackground;
 
-    // HUDs - Comentamos los HUDs originales y usamos solo GameHUD
-    // private final PlayerHUD playerHUD = new PlayerHUD();
-    // private final SystemHUD systemHUD = new SystemHUD();
-    // private final SpatialGridHUD spatialGridHUD = new SpatialGridHUD();
-    // private final InstrumentationHUD instrumentationHUD = new InstrumentationHUD();
-
-    private final GameHUD gameHUD = new GameHUD(); // ← NUEVO HUD
+    private final GameHUD gameHUD = new GameHUD();
     private final RendererProfiler rendererProfiler = new RendererProfiler(MONITORING_PERIOD_NS);
 
     private double cameraX = 0.0d;
@@ -169,7 +164,6 @@ public class Renderer extends Canvas implements Runnable {
     // region Constructors
     public Renderer(View view) {
         this.view = view;
-
         this.setIgnoreRepaint(true);
         this.setCameraClampLimits();
     }
@@ -178,7 +172,6 @@ public class Renderer extends Canvas implements Runnable {
     // *** PUBLICS ***
 
     public boolean activate() {
-        // Be sure all is ready to begin render!
         if (this.viewDimension == null) {
             throw new IllegalArgumentException("View dimensions not setted");
         }
@@ -188,7 +181,6 @@ public class Renderer extends Canvas implements Runnable {
                     + this.viewDimension.x + "," + this.viewDimension.y + ")");
         }
 
-        // BufferStrategy fails silently when canvas > screen
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         if (this.viewDimension.x > screenSize.width || this.viewDimension.y > screenSize.height) {
             throw new IllegalStateException(
@@ -208,7 +200,6 @@ public class Renderer extends Canvas implements Runnable {
         this.setPreferredSize(
                 new Dimension((int) this.viewDimension.x, (int) this.viewDimension.y));
 
-        // Initialize DTO pooling
         this.dynamicRenderDtoPool = new PoolMDTO<>(
                 () -> new DynamicRenderDTO(null, 0, 0, 0, 0, 0L, 0, 0, 0, 0, 0L));
         this.dynamicRenderMapper = new DynamicRenderableMapper(this.dynamicRenderDtoPool);
@@ -237,17 +228,12 @@ public class Renderer extends Canvas implements Runnable {
     // region getters (get***)
     public Renderable getLocalPlayerRenderable() {
         String localPlayerId = this.view.getLocalPlayerId();
-
         if (localPlayerId == null || localPlayerId.isEmpty()) {
-            return null; // ======= No player to follow =======>>
+            return null;
         }
-        Renderable renderableLocalPlayer = this.dynamicRenderables.get(this.view.getLocalPlayerId());
-        return renderableLocalPlayer;
+        return this.dynamicRenderables.get(this.view.getLocalPlayerId());
     }
 
-    /**
-     * Get render metrics for HUD display
-     */
     public RenderMetricsDTO getRenderMetrics() {
         return new RenderMetricsDTO(
                 this.rendererProfiler.getAvgDrawBackgroundMs(),
@@ -272,7 +258,6 @@ public class Renderer extends Canvas implements Runnable {
     public void setImages(BufferedImage background, Images images) {
         this.background = background;
         this.viBackground = null;
-
         this.images = images;
         this.imagesCache = new ImageCache(this.getGraphicsConfSafe(), this.images);
     }
@@ -282,23 +267,21 @@ public class Renderer extends Canvas implements Runnable {
         this.setCameraClampLimits();
         this.setPreferredSize(new Dimension((int) this.viewDimension.x, (int) this.viewDimension.y));
     }
-
     // endregion
 
     public void updateStaticRenderables(ArrayList<RenderDTO> renderablesData) {
         if (renderablesData == null) {
-            return; // ========= Nothing to render by the moment ... =========>>
+            return;
         }
 
         Map<String, Renderable> newRenderables = new java.util.concurrent.ConcurrentHashMap<>(this.staticRenderables);
 
         if (renderablesData.isEmpty()) {
-            newRenderables.clear(); //
+            newRenderables.clear();
             this.staticRenderables = newRenderables;
             return;
         }
 
-        // Update a renderable associated with each DBodyRenderInfoDTO
         long cFrame = this.currentFrame;
         for (RenderDTO renderableData : renderablesData) {
             String entityId = renderableData.entityId;
@@ -314,14 +297,13 @@ public class Renderer extends Canvas implements Runnable {
         }
 
         newRenderables.entrySet().removeIf(e -> e.getValue().getLastFrameSeen() != cFrame);
-        this.staticRenderables = newRenderables; // atomic swap
+        this.staticRenderables = newRenderables;
     }
 
     // *** PRIVATES ***
 
     // region drawers (draw***)
     private void drawDynamicRenderable(Graphics2D g) {
-        // Measure spatial query
         long queryStart = this.rendererProfiler.startInterval();
         ArrayList<String> visibleIds = this.view.queryEntitiesInRegion(
                 this.cameraX, this.cameraX + this.viewDimension.x,
@@ -330,7 +312,6 @@ public class Renderer extends Canvas implements Runnable {
                 this.visibleEntityIds);
         this.rendererProfiler.stopInterval(RendererProfiler.METRIC_QUERY_DYNAMIC, queryStart);
 
-        // Measure paint loop
         long paintStart = this.rendererProfiler.startInterval();
         for (String entityId : visibleIds) {
             DynamicRenderable renderable = this.dynamicRenderables.get(entityId);
@@ -342,30 +323,29 @@ public class Renderer extends Canvas implements Runnable {
     }
 
     private void drawHUDs(Graphics2D g) {
-        // Obtener datos del jugador
         PlayerRenderDTO playerData = this.view.getLocalPlayerRenderData();
 
         if (playerData != null) {
+            int timeRemaining = this.view.getTimeRemaining();
 
-            // Actualizar valores del HUD
-            this.gameHUD.setTimeRemaining(300); // Temporalmente fijo
+            this.gameHUD.setTimeRemaining(timeRemaining);
             this.gameHUD.setAsteroidsDestroyed(playerData.asteroidsDestroyed);
             this.gameHUD.setCoinsCollected(playerData.coinsCollected);
 
-            // Comprobar si ganó o perdió
-            if (playerData.coinsCollected >= 30) {
+            // Comprobar si ganó - AHORA USA EL VALOR DE CoinGameRules
+            if (playerData.coinsCollected >= CoinGameRules.getCoinsToWin()) {
                 this.gameHUD.setGameState("WINNER");
-            } else if (playerData.damage >= 1.0) {
+                this.view.stopTimer();
+            } else if (playerData.damage >= 1.0 || timeRemaining <= 0) {
                 this.gameHUD.setGameState("GAMEOVER");
             } else {
                 this.gameHUD.setGameState("PLAYING");
             }
 
-            // PASAR SOLO 3 VALORES: [vida, asteroides, monedas]
             this.gameHUD.draw(g,
-                    playerData.damage,           // Vida (0-1)
-                    playerData.asteroidsDestroyed, // Asteroides destruidos
-                    playerData.coinsCollected     // Monedas recogidas
+                    playerData.damage,
+                    playerData.asteroidsDestroyed,
+                    playerData.coinsCollected
             );
         }
     }
@@ -407,11 +387,11 @@ public class Renderer extends Canvas implements Runnable {
         double maxY = renderData.posY + half;
 
         if (maxX < camLeft || minX > camRight) {
-            return false; // ==== Out of horizontal bounds ======>>
+            return false;
         }
 
         if (maxY < camTop || minY > camBottom) {
-            return false; // ==== Out of vertical bounds ======>>
+            return false;
         }
 
         return true;
@@ -423,33 +403,28 @@ public class Renderer extends Canvas implements Runnable {
         do {
             gg = (Graphics2D) bs.getDrawGraphics();
             try {
-                // 1) BACKGROUND
                 long bgStart = this.rendererProfiler.startInterval();
-                gg.setComposite(AlphaComposite.Src); // Opaque
+                gg.setComposite(AlphaComposite.Src);
                 this.drawTiledBackground(gg);
                 gg.drawImage(this.viBackground, 0, 0, null);
                 this.rendererProfiler.stopInterval(RendererProfiler.METRIC_DRAW_BACKGROUND, bgStart);
 
-                // 2) WORLD (translated due camera)
-                gg.setComposite(AlphaComposite.SrcOver); // With transparency
+                gg.setComposite(AlphaComposite.SrcOver);
                 AffineTransform defaultTransform = gg.getTransform();
                 gg.translate(-this.cameraX, -this.cameraY);
 
-                // Draw static renderables
                 long staticStart = this.rendererProfiler.startInterval();
                 this.drawStaticRenderables(gg);
                 this.rendererProfiler.stopInterval(RendererProfiler.METRIC_DRAW_STATIC, staticStart);
 
-                // Draw dynamic renderables
                 long dynamicStart = this.rendererProfiler.startInterval();
                 this.drawDynamicRenderable(gg);
                 this.rendererProfiler.stopInterval(RendererProfiler.METRIC_DRAW_DYNAMIC, dynamicStart);
 
                 gg.setTransform(defaultTransform);
 
-                // 3) HUD (on top of everything)
                 long hudsStart = this.rendererProfiler.startInterval();
-                gg.setComposite(AlphaComposite.SrcOver); // With transparency
+                gg.setComposite(AlphaComposite.SrcOver);
                 this.drawHUDs(gg);
                 this.rendererProfiler.stopInterval(RendererProfiler.METRIC_DRAW_HUDS, hudsStart);
 
@@ -479,11 +454,9 @@ public class Renderer extends Canvas implements Runnable {
         final double scrollX = this.cameraX * this.backgroundScrollSpeedX;
         final double scrollY = this.cameraY * this.backgroundScrollSpeedY;
 
-        // Tile offset in [-(tile-1)..0], stable with negatives
         final int offX = -Math.floorMod((int) Math.floor(scrollX), tileW);
         final int offY = -Math.floorMod((int) Math.floor(scrollY), tileH);
 
-        // Start 1 tile before to ensure full coverage
         final int startX = offX - tileW;
         final int startY = offY - tileH;
         for (int x = startX; x < viewW + tileW; x += tileW) {
@@ -502,7 +475,6 @@ public class Renderer extends Canvas implements Runnable {
                     .getDefaultScreenDevice()
                     .getDefaultConfiguration();
         }
-
         return gc;
     }
 
@@ -511,9 +483,7 @@ public class Renderer extends Canvas implements Runnable {
                 this.viBackground,
                 this.background,
                 new Dimension((int) this.viewDimension.x, (int) this.viewDimension.y));
-
         return this.viBackground;
-
     }
 
     private VolatileImage getVolatileImage(
@@ -523,7 +493,6 @@ public class Renderer extends Canvas implements Runnable {
 
         if (vi == null || vi.getWidth() != dim.width || vi.getHeight() != dim.height
                 || vi.validate(gc) == VolatileImage.IMAGE_INCOMPATIBLE) {
-            // New volatile image
             vi = gc.createCompatibleVolatileImage(dim.width, dim.height, Transparency.OPAQUE);
         }
 
@@ -548,7 +517,7 @@ public class Renderer extends Canvas implements Runnable {
         if (woldDim == null || this.viewDimension == null) {
             this.maxCameraClampX = 0.0;
             this.maxCameraClampY = 0.0;
-            return; // ======= No world or view dimensions info ======= >>
+            return;
         }
 
         this.maxCameraClampX = Math.max(0.0, woldDim.x - this.viewDimension.x);
@@ -562,7 +531,7 @@ public class Renderer extends Canvas implements Runnable {
         DoubleVector worldDim = this.view.getWorldDimension();
 
         if (localPlayerRenderable == null || this.viewDimension == null || worldDim == null) {
-            return; // ======== No player or data to follow =======>>
+            return;
         }
 
         RenderDTO playerData = localPlayerRenderable.getRenderData();
@@ -594,20 +563,15 @@ public class Renderer extends Canvas implements Runnable {
             desiredY = playerData.posY - (playerY);
         }
 
-        // double desiredX = playerData.posX - (this.viewDimension.x / 2.0d);
-        // double desiredY = playerData.posY - (this.viewDimension.y / 2.0d);
-
         this.cameraX += (desiredX - this.cameraX);
         this.cameraY += (desiredY - this.cameraY);
 
-        // // Clamp when camera goes out of world limits
         this.cameraX = clamp(cameraX, 0.0, this.maxCameraClampX);
         this.cameraY = clamp(cameraY, 0.0, this.maxCameraClampY);
     }
 
     private void updateDynamicRenderables(ArrayList<DynamicRenderDTO> renderablesData) {
         if (renderablesData == null || renderablesData.isEmpty()) {
-            // If no objects are alive this frame, clear the snapshot entirely
             for (DynamicRenderable renderable : this.dynamicRenderables.values()) {
                 DynamicRenderDTO dto = (DynamicRenderDTO) renderable.getRenderData();
                 if (dto != null) {
@@ -615,10 +579,9 @@ public class Renderer extends Canvas implements Runnable {
                 }
             }
             this.dynamicRenderables.clear();
-            return; // ========= Nothing to render by the moment ... =========>>
+            return;
         }
 
-        // Update or create a renderable associated with each DBodyRenderInfoDTO
         long cFrame = this.currentFrame;
         for (DynamicRenderDTO renderableData : renderablesData) {
             String entityId = renderableData.entityId;
@@ -629,7 +592,6 @@ public class Renderer extends Canvas implements Runnable {
 
             DynamicRenderable renderable = this.dynamicRenderables.get(entityId);
             if (renderable != null) {
-                // Existing renderable → update its snapshot and sprite if needed
                 DynamicRenderDTO current = (DynamicRenderDTO) renderable.getRenderData();
                 if (current == null) {
                     DynamicRenderDTO pooled = this.dynamicRenderDtoPool.acquire();
@@ -645,7 +607,6 @@ public class Renderer extends Canvas implements Runnable {
             }
         }
 
-        // Remove renderables not updated this frame (i.e., objects no longer alive)
         this.dynamicRenderables.entrySet().removeIf(entry -> {
             DynamicRenderable renderable = entry.getValue();
             if (renderable.getLastFrameSeen() == cFrame) {
@@ -672,88 +633,6 @@ public class Renderer extends Canvas implements Runnable {
         return value;
     }
 
-    private void renderFrame(Graphics2D g) {
-        CanvasMetrics metrics = this.getCanvasMetrics();
-        ViewportTransform transform = this.calculateViewportTransform(metrics);
-
-        this.clearCanvas(g, metrics);
-
-        Graphics2D worldG = (Graphics2D) g.create();
-        try {
-            this.applyWorldTransform(worldG, transform);
-            this.drawWorld(worldG);
-        } finally {
-            worldG.dispose();
-        }
-    }
-
-    private void applyWorldTransform(Graphics2D g, ViewportTransform transform) {
-        g.translate(transform.offsetX, transform.offsetY);
-        g.scale(transform.scale, transform.scale);
-    }
-
-    private void clearCanvas(Graphics2D g, CanvasMetrics metrics) {
-        g.setComposite(AlphaComposite.Src); // Opaque
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, metrics.width, metrics.height);
-    }
-
-    private ViewportTransform calculateViewportTransform(CanvasMetrics metrics) {
-        double scaleX = metrics.width / this.viewDimension.x;
-        double scaleY = metrics.height / this.viewDimension.y;
-        double scale = Math.min(scaleX, scaleY);
-
-        double scaledWidth = this.viewDimension.x * scale;
-        double scaledHeight = this.viewDimension.y * scale;
-        double offsetX = (metrics.width - scaledWidth) * 0.5d;
-        double offsetY = (metrics.height - scaledHeight) * 0.5d;
-
-        return new ViewportTransform(scale, offsetX, offsetY);
-    }
-
-    private CanvasMetrics getCanvasMetrics() {
-        int canvasWidth = this.getWidth();
-        int canvasHeight = this.getHeight();
-        if (canvasWidth <= 0 || canvasHeight <= 0) {
-            canvasWidth = (int) this.viewDimension.x;
-            canvasHeight = (int) this.viewDimension.y;
-        }
-
-        return new CanvasMetrics(canvasWidth, canvasHeight);
-    }
-
-    private void drawWorld(Graphics2D g) {
-        g.setComposite(AlphaComposite.Src); // Opaque
-        g.drawImage(this.getVIBackground(), 0, 0, null);
-
-        g.setComposite(AlphaComposite.SrcOver); // With transparency
-        this.drawStaticRenderables(g);
-        this.drawDynamicRenderable(g);
-        this.drawHUDs(g);
-    }
-
-    private static final class CanvasMetrics {
-        private final int width;
-        private final int height;
-
-        private CanvasMetrics(int width, int height) {
-            this.width = width;
-            this.height = height;
-        }
-    }
-
-    private static final class ViewportTransform {
-        private final double scale;
-        private final double offsetX;
-        private final double offsetY;
-
-        private ViewportTransform(double scale, double offsetX, double offsetY) {
-            this.scale = scale;
-            this.offsetX = offsetX;
-            this.offsetY = offsetY;
-        }
-    }
-
     // *** INTERFACE IMPLEMENTATIONS ***
 
     // region Runnable
@@ -771,28 +650,30 @@ public class Renderer extends Canvas implements Runnable {
         while (true) {
             EngineState engineState = this.view.getEngineState();
             if (engineState == EngineState.STOPPED) {
-                break; // ======= Engine stopped, exit render loop =======>>
+                break;
             }
 
             long frameIntervalStart = 0L;
-            if (engineState == EngineState.ALIVE) { // TO-DO Pause condition
+            if (engineState == EngineState.ALIVE) {
                 this.currentFrame++;
                 frameIntervalStart = this.rendererProfiler.startInterval();
                 this.rendererProfiler.addFrame();
 
-                // 1) Recover snapshot of dynamic renderables data
                 long updateStart = this.rendererProfiler.startInterval();
                 ArrayList<DynamicRenderDTO> renderData = this.view.snapshotRenderData(this.dynamicRenderMapper);
                 this.updateDynamicRenderables(renderData);
                 this.updateCamera();
+
+                // NUEVO: Actualizar el temporizador cada frame
+                this.view.updateTimer();
+
                 this.rendererProfiler.stopInterval(RendererProfiler.METRIC_UPDATE, updateStart);
 
-                // 2) Draw the scene with the current snapshot
                 long drawStart = this.rendererProfiler.startInterval();
                 this.drawScene(bs);
                 this.rendererProfiler.stopInterval(RendererProfiler.METRIC_DRAW, drawStart);
 
-                this.view.syncInputState(); // To prevent key events
+                this.view.syncInputState();
             }
 
             try {

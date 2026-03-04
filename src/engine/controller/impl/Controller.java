@@ -173,6 +173,14 @@ public class Controller implements WorldManager, DomainEventProcessor {
     private DoubleVector viewDimension;
     private DoubleVector worldDimension;
     private int maxBodies;
+
+    // NUEVO: Campo para el temporizador
+    private int timeRemainingSeconds = 300; // 5 minutos = 300 segundos
+    private long lastTimeUpdate = System.nanoTime();
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
+
+    // NUEVO: Flag para controlar si el temporizador está activo
+    private boolean timerActive = true;
     // endregion
 
     // region Constructors
@@ -234,7 +242,51 @@ public class Controller implements WorldManager, DomainEventProcessor {
         this.view.activate();
         this.model.activate();
         this.engineState = EngineState.ALIVE;
+        this.lastTimeUpdate = System.nanoTime(); // Inicializar el temporizador
+        this.timerActive = true; // Activar el temporizador
         System.out.println("Controller: Activated ");
+    }
+
+    // NUEVO: Método para actualizar el temporizador
+    public void updateTimer() {
+        // Solo actualizar si el temporizador está activo y el juego está vivo
+        if (!timerActive || this.engineState != EngineState.ALIVE || timeRemainingSeconds <= 0) {
+            return;
+        }
+
+        long now = System.nanoTime();
+        long elapsed = now - lastTimeUpdate;
+
+        if (elapsed >= NANOS_PER_SECOND) {
+            timeRemainingSeconds--;
+            lastTimeUpdate = now;
+
+            System.out.println("Tiempo restante: " + timeRemainingSeconds + " segundos");
+
+            // Si el tiempo llega a 0, game over
+            if (timeRemainingSeconds <= 0) {
+                System.out.println("¡TIEMPO AGOTADO! GAME OVER");
+                // Opcional: podrías matar al jugador aquí
+            }
+        }
+    }
+
+    // NUEVO: Método para detener el temporizador (cuando se gana)
+    public void stopTimer() {
+        this.timerActive = false;
+        System.out.println("Temporizador detenido. Tiempo final: " + timeRemainingSeconds + " segundos");
+    }
+
+    // NUEVO: Getter para el tiempo restante
+    public int getTimeRemaining() {
+        return this.timeRemainingSeconds;
+    }
+
+    // NUEVO: Resetear el temporizador (para nuevas partidas)
+    public void resetTimer() {
+        this.timeRemainingSeconds = 300;
+        this.lastTimeUpdate = System.nanoTime();
+        this.timerActive = true;
     }
 
     // region Engine (engine**)
@@ -450,8 +502,8 @@ public class Controller implements WorldManager, DomainEventProcessor {
 
     @Override
     public void addDynamicBody(String assetId, double size, double posX, double posY,
-            double speedX, double speedY, double accX, double accY,
-            double angle, double angularSpeed, double angularAcc, double thrust) {
+                               double speedX, double speedY, double accX, double accY,
+                               double angle, double angularSpeed, double angularAcc, double thrust) {
 
         String entityId = this.model.addDynamic(size, posX, posY, speedX, speedY,
                 accX, accY, angle, angularSpeed, angularAcc, thrust, -1L);
@@ -464,8 +516,8 @@ public class Controller implements WorldManager, DomainEventProcessor {
 
     @Override
     public String addPlayer(String assetId, double size, double posX, double posY,
-            double speedX, double speedY, double accX, double accY,
-            double angle, double angularSpeed, double angularAcc, double thrust) {
+                            double speedX, double speedY, double accX, double accY,
+                            double angle, double angularSpeed, double angularAcc, double thrust) {
 
         String entityId = this.model.addPlayer(size, posX, posY, speedX, speedY,
                 accX, accY, angle, angularSpeed, angularAcc, thrust, -1L);

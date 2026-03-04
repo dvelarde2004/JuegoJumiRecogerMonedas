@@ -8,18 +8,20 @@ import engine.world.ports.DefEmitterDTO;
 import engine.world.ports.DefItem;
 import engine.world.ports.DefItemDTO;
 import engine.world.ports.WorldDefinition;
+import gamerules.CoinGameRules;
 
 /**
  * CoinLevelGenerator
  * ------------------
  * Genera el nivel inicial para el juego de las monedas:
- * - Coloca 30 monedas en posiciones aleatorias
+ * - Coloca N monedas en posiciones aleatorias (N = CoinGameRules.getCoinsToWin())
  * - Añade decoración de fondo
  * - Posiciona al jugador
  */
 public class CoinLevelGenerator extends AbstractLevelGenerator {
 
-    private static final int COINS_TO_GENERATE = 30;
+    // NUEVO: Obtener el número de monedas de CoinGameRules
+    private static final int COINS_TO_GENERATE = CoinGameRules.getCoinsToWin();
 
     // *** CONSTRUCTORS ***
     public CoinLevelGenerator(WorldManager worldManager, WorldDefinition worldDef) {
@@ -30,7 +32,6 @@ public class CoinLevelGenerator extends AbstractLevelGenerator {
 
     @Override
     protected void createDecorators() {
-        // Añadir decoración de estrellas y galaxias de fondo
         ArrayList<DefItem> decorators = this.getWorldDefinition().spaceDecorators;
 
         for (DefItem def : decorators) {
@@ -41,7 +42,6 @@ public class CoinLevelGenerator extends AbstractLevelGenerator {
 
     @Override
     protected void createStatics() {
-        // Añadir cuerpos estáticos (planetas, etc.) si los hay
         ArrayList<DefItem> bodyDefs = this.getWorldDefinition().gravityBodies;
 
         for (DefItem def : bodyDefs) {
@@ -52,7 +52,6 @@ public class CoinLevelGenerator extends AbstractLevelGenerator {
 
     @Override
     protected void createPlayers() {
-        // Crear el jugador
         WorldDefinition worldDef = this.getWorldDefinition();
         ArrayList<DefItem> shipDefs = worldDef.spaceships;
         ArrayList<DefEmitterDTO> weaponDefs = worldDef.weapons;
@@ -66,7 +65,7 @@ public class CoinLevelGenerator extends AbstractLevelGenerator {
 
     @Override
     protected void createDynamics() {
-        // Crear las 30 monedas en posiciones aleatorias
+        // Crear las monedas en posiciones aleatorias
         this.createCoins();
 
         // También podemos añadir algunos asteroides iniciales
@@ -82,18 +81,17 @@ public class CoinLevelGenerator extends AbstractLevelGenerator {
 
     // *** PRIVATE ***
 
-    // En gamelevel/CoinLevelGenerator.java, dentro del método createCoins()
     private void createCoins() {
         double worldWidth = this.getWorldDefinition().worldWidth;
         double worldHeight = this.getWorldDefinition().worldHeight;
 
         System.out.println("=== CREANDO " + COINS_TO_GENERATE + " MONEDAS ===");
+        System.out.println("(Valor obtenido de CoinGameRules.getCoinsToWin())");
 
         for (int i = 0; i < COINS_TO_GENERATE; i++) {
-            // Generar posición aleatoria pero ahora en un mundo de 5000x5000
             double posX = this.randomDoubleBetween(200, worldWidth - 200);
             double posY = this.randomDoubleBetween(200, worldHeight - 200);
-            double size = this.randomDoubleBetween(80, 120); // ← MÁS GRANDES (antes 30-50)
+            double size = this.randomDoubleBetween(80, 120);
             double angle = this.randomDoubleBetween(0, 360);
 
             System.out.println("Creando moneda " + (i+1) + " en posición: (" +
@@ -106,7 +104,7 @@ public class CoinLevelGenerator extends AbstractLevelGenerator {
                     size,
                     posX, posY,
                     angle,
-                    45 // angularSpeed (rotación lenta)
+                    45
             );
         }
 

@@ -19,7 +19,7 @@ import engine.model.bodies.ports.BodyType;
  * Reglas específicas para el juego de recolección de monedas:
  * - Nave vs Asteroide → -25% vida (si no hay inmunidad)
  * - Nave vs Moneda → +1 moneda, la moneda desaparece
- * - Al llegar a 30 monedas → VICTORIA
+ * - Al llegar a X monedas → VICTORIA (X definido por setCoinsToWin)
  * - Al llegar a 0 vida → DERROTA
  */
 public class CoinGameRules implements ActionsGenerator {
@@ -33,7 +33,23 @@ public class CoinGameRules implements ActionsGenerator {
 
     // Constantes
     private static final double DAMAGE_PER_HIT = 0.25; // 25% de daño
-    private static final int COINS_TO_WIN = 30;
+
+    // NUEVO: Variable para el número de monedas necesarias (con valor por defecto)
+    private static int coinsToWin = 30; // Valor por defecto
+
+    // NUEVO: Setter para cambiar el número de monedas necesarias
+    public static void setCoinsToWin(int coins) {
+        if (coins <= 0) {
+            throw new IllegalArgumentException("El número de monedas debe ser positivo");
+        }
+        coinsToWin = coins;
+        System.out.println("CoinGameRules: Número de monedas para ganar cambiado a " + coins);
+    }
+
+    // NUEVO: Getter para obtener el número de monedas necesarias
+    public static int getCoinsToWin() {
+        return coinsToWin;
+    }
 
     // *** INTERFACE IMPLEMENTATIONS ***
 
@@ -141,12 +157,12 @@ public class CoinGameRules implements ActionsGenerator {
             // También incrementamos el contador local para seguimiento
             this.coinsCollected++;
 
-            System.out.println("DEBUG - Moneda recogida! Total reglas: " + this.coinsCollected + "/30");
+            System.out.println("DEBUG - Moneda recogida! Total reglas: " + this.coinsCollected + "/" + coinsToWin);
 
-            // Verificar si ganó
-            if (this.coinsCollected >= COINS_TO_WIN) {
+            // Verificar si ganó (usando coinsToWin)
+            if (this.coinsCollected >= coinsToWin) {
                 this.gameWon = true;
-                System.out.println("¡VICTORIA! Has recogido 30 monedas");
+                System.out.println("¡VICTORIA! Has recogido " + coinsToWin + " monedas");
             }
 
             return;
