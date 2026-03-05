@@ -26,10 +26,22 @@ public class Main {
 
 		ProjectAssets projectAssets = new ProjectAssets();
 
-		// NUEVO: Configurar el número de monedas necesarias para ganar
-		CoinGameRules.setCoinsToWin(3); // ← CAMBIA ESTE VALOR PARA MODIFICAR LA DIFICULTAD
+		// *** CONFIGURACIÓN DEL JUEGO ***
+		// Puedes cambiar estos valores para modificar la dificultad
+
+		// Número de monedas necesarias para ganar
+		CoinGameRules.setCoinsToWin(3);
+
+		// Tiempo límite en segundos (300 = 5 minutos, 60 = 1 minuto, 120 = 2 minutos, etc.)
+		CoinGameRules.setTimeLimit(30); // 5 minutos
+
+		// O también puedes usar minutos directamente:
+		// CoinGameRules.setTimeLimitMinutes(5); // 5 minutos
+
 		System.out.println("=== CONFIGURACIÓN ===");
 		System.out.println("Monedas necesarias para ganar: " + CoinGameRules.getCoinsToWin());
+		System.out.println("Tiempo límite: " + CoinGameRules.getTimeLimitFormatted() +
+				" (" + CoinGameRules.getTimeLimit() + " segundos)");
 
 		ActionsGenerator gameRules = new CoinGameRules();
 
@@ -50,7 +62,8 @@ public class Main {
 		new AIBasicSpawner(controller, worldDef, maxAsteroidCreationDelay).activate();
 
 		System.out.println("=== JUEGO INICIADO ===");
-		System.out.println("Objetivo: Recoge " + CoinGameRules.getCoinsToWin() + " monedas en 5 minutos");
+		System.out.println("Objetivo: Recoge " + CoinGameRules.getCoinsToWin() +
+				" monedas en " + CoinGameRules.getTimeLimitFormatted());
 		System.out.println("Vida: 4 golpes (25% por asteroide)");
 		System.out.println("¡Buena suerte, piloto!");
 	}

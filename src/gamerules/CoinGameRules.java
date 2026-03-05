@@ -20,7 +20,7 @@ import engine.model.bodies.ports.BodyType;
  * - Nave vs Asteroide → -25% vida (si no hay inmunidad)
  * - Nave vs Moneda → +1 moneda, la moneda desaparece
  * - Al llegar a X monedas → VICTORIA (X definido por setCoinsToWin)
- * - Al llegar a 0 vida → DERROTA
+ * - Al llegar a 0 vida o tiempo límite → DERROTA
  */
 public class CoinGameRules implements ActionsGenerator {
 
@@ -34,21 +34,57 @@ public class CoinGameRules implements ActionsGenerator {
     // Constantes
     private static final double DAMAGE_PER_HIT = 0.25; // 25% de daño
 
-    // NUEVO: Variable para el número de monedas necesarias (con valor por defecto)
+    // Configuración de monedas
     private static int coinsToWin = 30; // Valor por defecto
 
-    // NUEVO: Setter para cambiar el número de monedas necesarias
+    // NUEVO: Configuración de tiempo (en segundos)
+    private static int timeLimitSeconds = 300; // 5 minutos por defecto
+
+    // *** MÉTODOS DE CONFIGURACIÓN DE MONEDAS ***
+
     public static void setCoinsToWin(int coins) {
         if (coins <= 0) {
             throw new IllegalArgumentException("El número de monedas debe ser positivo");
         }
         coinsToWin = coins;
-        System.out.println("CoinGameRules: Número de monedas para ganar cambiado a " + coins);
+        System.out.println("CoinGameRules: Monedas para ganar cambiado a " + coins);
     }
 
-    // NUEVO: Getter para obtener el número de monedas necesarias
     public static int getCoinsToWin() {
         return coinsToWin;
+    }
+
+    // *** NUEVOS MÉTODOS DE CONFIGURACIÓN DE TIEMPO ***
+
+    /**
+     * Establece el tiempo límite en segundos
+     * @param seconds tiempo en segundos (ej: 300 = 5 minutos, 60 = 1 minuto)
+     */
+    public static void setTimeLimit(int seconds) {
+        if (seconds <= 0) {
+            throw new IllegalArgumentException("El tiempo límite debe ser positivo");
+        }
+        timeLimitSeconds = seconds;
+        System.out.println("CoinGameRules: Tiempo límite cambiado a " + seconds + " segundos (" +
+                (seconds / 60) + " minutos " + (seconds % 60) + " segundos)");
+    }
+
+    /**
+     * Establece el tiempo límite en minutos
+     * @param minutes tiempo en minutos
+     */
+    public static void setTimeLimitMinutes(int minutes) {
+        setTimeLimit(minutes * 60);
+    }
+
+    public static int getTimeLimit() {
+        return timeLimitSeconds;
+    }
+
+    public static String getTimeLimitFormatted() {
+        int minutes = timeLimitSeconds / 60;
+        int seconds = timeLimitSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 
     // *** INTERFACE IMPLEMENTATIONS ***
@@ -132,34 +168,18 @@ public class CoinGameRules implements ActionsGenerator {
         if ((typeA == BodyType.PLAYER && typeB == BodyType.COIN) ||
                 (typeA == BodyType.COIN && typeB == BodyType.PLAYER)) {
 
-            // Identificar la moneda (la que NO es el jugador)
             String coinId = (typeA == BodyType.COIN) ?
                     event.primaryBodyRef.id() : event.secondaryBodyRef.id();
 
-            // Identificar el jugador
             String playerId = (typeA == BodyType.PLAYER) ?
                     event.primaryBodyRef.id() : event.secondaryBodyRef.id();
 
-            // La moneda muere (desaparece)
-            actions.add(new ActionDTO(
-                    coinId,
-                    BodyType.COIN,
-                    ActionType.DIE,
-                    event));
+            actions.add(new ActionDTO(coinId, BodyType.COIN, ActionType.DIE, event));
+            actions.add(new ActionDTO(playerId, BodyType.PLAYER, ActionType.COLLECT_COIN, event));
 
-            // ¡IMPORTANTE! Añadir acción para incrementar el contador en el PlayerBody
-            actions.add(new ActionDTO(
-                    playerId,
-                    BodyType.PLAYER,
-                    ActionType.COLLECT_COIN,
-                    event));
-
-            // También incrementamos el contador local para seguimiento
             this.coinsCollected++;
-
             System.out.println("DEBUG - Moneda recogida! Total reglas: " + this.coinsCollected + "/" + coinsToWin);
 
-            // Verificar si ganó (usando coinsToWin)
             if (this.coinsCollected >= coinsToWin) {
                 this.gameWon = true;
                 System.out.println("¡VICTORIA! Has recogido " + coinsToWin + " monedas");
@@ -172,38 +192,23 @@ public class CoinGameRules implements ActionsGenerator {
         if ((typeA == BodyType.PLAYER && typeB == BodyType.ASTEROID) ||
                 (typeA == BodyType.ASTEROID && typeB == BodyType.PLAYER)) {
 
-            // Verificar inmunidad (proyectiles del propio jugador)
             if (event.payload.haveImmunity) {
-                return; // El proyectil atraviesa sin daño
+                return;
             }
 
-            // Aplicar daño al jugador
             this.playerHealth -= DAMAGE_PER_HIT;
-
             System.out.println("DEBUG - ¡Impacto! Vida restante: " + (this.playerHealth * 100) + "%");
 
-            // El asteroide muere
             String asteroidId = (typeA == BodyType.ASTEROID) ?
                     event.primaryBodyRef.id() : event.secondaryBodyRef.id();
 
-            actions.add(new ActionDTO(
-                    asteroidId,
-                    BodyType.ASTEROID,
-                    ActionType.DIE,
-                    event));
-
-            // Incrementar contador de asteroides destruidos
+            actions.add(new ActionDTO(asteroidId, BodyType.ASTEROID, ActionType.DIE, event));
             this.asteroidsDestroyed++;
 
-            // Verificar si el jugador murió
             if (this.playerHealth <= 0) {
                 this.gameOver = true;
                 System.out.println("GAME OVER - Nave destruida");
-                actions.add(new ActionDTO(
-                        event.primaryBodyRef.id(),
-                        BodyType.PLAYER,
-                        ActionType.DIE,
-                        event));
+                actions.add(new ActionDTO(event.primaryBodyRef.id(), BodyType.PLAYER, ActionType.DIE, event));
             }
 
             return;
@@ -213,27 +218,13 @@ public class CoinGameRules implements ActionsGenerator {
         if ((typeA == BodyType.PROJECTILE && typeB == BodyType.ASTEROID) ||
                 (typeA == BodyType.ASTEROID && typeB == BodyType.PROJECTILE)) {
 
-            // El asteroide muere
             String asteroidId = (typeA == BodyType.ASTEROID) ?
                     event.primaryBodyRef.id() : event.secondaryBodyRef.id();
-
-            actions.add(new ActionDTO(
-                    asteroidId,
-                    BodyType.ASTEROID,
-                    ActionType.DIE,
-                    event));
-
-            // El proyectil también muere
             String projectileId = (typeA == BodyType.PROJECTILE) ?
                     event.primaryBodyRef.id() : event.secondaryBodyRef.id();
 
-            actions.add(new ActionDTO(
-                    projectileId,
-                    BodyType.PROJECTILE,
-                    ActionType.DIE,
-                    event));
-
-            // Incrementar contador de asteroides destruidos
+            actions.add(new ActionDTO(asteroidId, BodyType.ASTEROID, ActionType.DIE, event));
+            actions.add(new ActionDTO(projectileId, BodyType.PROJECTILE, ActionType.DIE, event));
             this.asteroidsDestroyed++;
 
             return;

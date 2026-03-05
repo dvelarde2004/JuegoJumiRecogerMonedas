@@ -26,6 +26,7 @@ import engine.view.renderables.ports.PlayerRenderDTO;
 import engine.view.renderables.ports.RenderDTO;
 import engine.view.renderables.ports.SpatialGridStatisticsRenderDTO;
 import engine.world.ports.DefEmitterDTO;
+import gamerules.CoinGameRules; // ← IMPORTANTE: Importar las reglas
 
 /**
  * Controller
@@ -174,12 +175,10 @@ public class Controller implements WorldManager, DomainEventProcessor {
     private DoubleVector worldDimension;
     private int maxBodies;
 
-    // NUEVO: Campo para el temporizador
-    private int timeRemainingSeconds = 300; // 5 minutos = 300 segundos
+    // NUEVO: El tiempo ahora se obtiene de CoinGameRules
+    private int timeRemainingSeconds;
     private long lastTimeUpdate = System.nanoTime();
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
-
-    // NUEVO: Flag para controlar si el temporizador está activo
     private boolean timerActive = true;
     // endregion
 
@@ -212,6 +211,17 @@ public class Controller implements WorldManager, DomainEventProcessor {
         this.gameRulesEngine = gameRulesEngine;
         this.maxBodies = maxBodies;
         model.setMaxBodies(maxBodies);
+
+        // NUEVO: Inicializar el tiempo desde CoinGameRules si es posible
+        if (gameRulesEngine instanceof CoinGameRules) {
+            this.timeRemainingSeconds = CoinGameRules.getTimeLimit();
+            System.out.println("Controller: Tiempo límite configurado a " + timeRemainingSeconds +
+                    " segundos (" + (timeRemainingSeconds / 60) + ":" +
+                    String.format("%02d", timeRemainingSeconds % 60) + ")");
+        } else {
+            this.timeRemainingSeconds = 300; // Valor por defecto (5 minutos)
+            System.out.println("Controller: Usando tiempo por defecto: 300 segundos");
+        }
 
         this.setModel(model);
         this.setView(view);
@@ -261,7 +271,10 @@ public class Controller implements WorldManager, DomainEventProcessor {
             timeRemainingSeconds--;
             lastTimeUpdate = now;
 
-            System.out.println("Tiempo restante: " + timeRemainingSeconds + " segundos");
+            // Mostrar tiempo cada 30 segundos o cuando quedan 10 segundos o menos
+            if (timeRemainingSeconds % 30 == 0 || timeRemainingSeconds <= 10) {
+                System.out.println("Tiempo restante: " + timeRemainingSeconds + " segundos");
+            }
 
             // Si el tiempo llega a 0, game over
             if (timeRemainingSeconds <= 0) {
@@ -284,9 +297,14 @@ public class Controller implements WorldManager, DomainEventProcessor {
 
     // NUEVO: Resetear el temporizador (para nuevas partidas)
     public void resetTimer() {
-        this.timeRemainingSeconds = 300;
+        if (gameRulesEngine instanceof CoinGameRules) {
+            this.timeRemainingSeconds = CoinGameRules.getTimeLimit();
+        } else {
+            this.timeRemainingSeconds = 300;
+        }
         this.lastTimeUpdate = System.nanoTime();
         this.timerActive = true;
+        System.out.println("Temporizador reiniciado: " + timeRemainingSeconds + " segundos");
     }
 
     // region Engine (engine**)

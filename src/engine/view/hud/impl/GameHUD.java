@@ -7,11 +7,6 @@ import java.awt.Graphics2D;
 import engine.view.hud.core.DataHUD;
 import gamerules.CoinGameRules;
 
-/**
- * GameHUD
- * -------
- * HUD personalizado para el juego de recolección de monedas.
- */
 public class GameHUD extends DataHUD {
 
     private Font timerFont = new Font("Monospaced", Font.BOLD, 48);
@@ -19,11 +14,10 @@ public class GameHUD extends DataHUD {
     private int coinsCollected = 0;
     private int timeRemainingSeconds = 300;
     private String gameState = "PLAYING";
-
-    // NUEVO: Obtener el valor directamente de CoinGameRules
     private final int coinsToWin = CoinGameRules.getCoinsToWin();
+    // NUEVO: Obtener el tiempo total para mostrarlo también
+    private final int totalTimeSeconds = CoinGameRules.getTimeLimit();
 
-    // region Constructors
     public GameHUD() {
         super(
                 new Color(255, 215, 0, 255),
@@ -32,7 +26,6 @@ public class GameHUD extends DataHUD {
                 new Color(255, 255, 255, 255),
                 50, 50, 40);
     }
-    // endregion
 
     @Override
     public void draw(Graphics2D g, Object... values) {
@@ -43,7 +36,7 @@ public class GameHUD extends DataHUD {
         double health = 1.0 - damage;
         health = Math.max(0.0, Math.min(1.0, health));
 
-        // Barra de vida
+        // Barra de vida (código existente)
         int barX = 50;
         int barY = 50;
         int barWidth = 200;
@@ -72,18 +65,20 @@ public class GameHUD extends DataHUD {
         String healthPercent = String.format("%d%%", (int)(health * 100));
         g.drawString(healthPercent, barX + barWidth + 10, barY + 15);
 
-        // Reloj
+        // RELOJ - AHORA MUESTRA EL TIEMPO REAL
         g.setFont(timerFont);
         g.setColor(Color.CYAN);
+
         int minutes = this.timeRemainingSeconds / 60;
         int seconds = this.timeRemainingSeconds % 60;
         String timeText = String.format("%02d:%02d", minutes, seconds);
+
         int screenWidth = 1920;
         int timerX = (screenWidth / 2) - 100;
         int timerY = 80;
         g.drawString(timeText, timerX, timerY);
 
-        // CONTADOR DE MONEDAS - AHORA USA coinsToWin DE CoinGameRules
+        // Contador de monedas
         g.setFont(new Font("Monospaced", Font.BOLD, 28));
         g.setColor(Color.YELLOW);
         String coinsText = String.format("COINS: %d/%d", coins, coinsToWin);
@@ -95,7 +90,7 @@ public class GameHUD extends DataHUD {
         String asteroidsText = String.format("ASTEROIDS: %d", asteroids);
         g.drawString(asteroidsText, 50, 200);
 
-        // Mensajes
+        // Mensajes de victoria/derrota
         if ("WINNER".equals(this.gameState)) {
             g.setFont(new Font("Arial", Font.BOLD, 72));
             g.setColor(Color.GREEN);
